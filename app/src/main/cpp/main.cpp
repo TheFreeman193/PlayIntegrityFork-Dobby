@@ -1,7 +1,6 @@
 #include <android/log.h>
 #include <sys/system_properties.h>
 #include <unistd.h>
-#include <fstream>
 
 #include "zygisk.hpp"
 #include "shadowhook.h"
@@ -11,7 +10,9 @@
 
 #define DEX_FILE_PATH "/data/adb/modules/playintegrityfix/classes.dex"
 
-#define PROP_FILE_PATH "/data/adb/modules/playintegrityfix/pif.json"
+#define JSON_FILE_PATH "/data/adb/modules/playintegrityfix/pif.json"
+
+#define CUSTOM_JSON_FILE_PATH "/data/adb/modules/playintegrityfix/custom.pif.json"
 
 static std::string FIRST_API_LEVEL, SECURITY_PATCH;
 
@@ -28,15 +29,17 @@ static void modify_callback(void *cookie, const char *name, const char *value, u
     std::string_view prop(name);
 
     if (prop.ends_with("api_level")) {
-        if (FIRST_API_LEVEL == "NULL") {
+        if (FIRST_API_LEVEL.empty()) {
+            LOGD("FIRST_API_LEVEL is empty, ignoring it...");
+        } else if (FIRST_API_LEVEL == "nullptr") {
             value = nullptr;
         } else {
             value = FIRST_API_LEVEL.c_str();
         }
         LOGD("[%s] -> %s", name, value);
     } else if (prop.ends_with("security_patch")) {
-        if (SECURITY_PATCH == "NULL") {
-            value = nullptr;
+        if (SECURITY_PATCH.empty()) {
+            LOGD("SECURITY_PATCH is empty, ignoring it...");
         } else {
             value = SECURITY_PATCH.c_str();
         }
@@ -72,27 +75,6 @@ static void doHook() {
     LOGD("Found '__system_property_read_callback' handle at %p", handle);
 }
 
-static void sendVector(int fd, const std::vector<char> &vec) {
-    // Send the size of the vector
-    size_t size = vec.size();
-    write(fd, &size, sizeof(size_t));
-
-    // Send the vector data
-    write(fd, vec.data(), size);
-}
-
-static std::vector<char> receiveVector(int fd) {
-    // Receive the size of the vector
-    size_t size;
-    read(fd, &size, sizeof(size_t));
-
-    // Receive the vector data
-    std::vector<char> vec(size);
-    read(fd, vec.data(), size);
-
-    return vec;
-}
-
 class PlayIntegrityFix : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override {
@@ -101,15 +83,17 @@ public:
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
-        bool isGms = false;
-        bool isGmsUnstable = false;
+        bool isGms = false, isGmsUnstable = false;
 
         auto rawProcess = env->GetStringUTFChars(args->nice_name, nullptr);
+
         if (rawProcess) {
             std::string_view process(rawProcess);
+
             isGms = process.starts_with("com.google.android.gms");
             isGmsUnstable = process.compare("com.google.android.gms.unstable") == 0;
         }
+
         env->ReleaseStringUTFChars(args->nice_name, rawProcess);
 
         if (!isGms) {
@@ -124,32 +108,55 @@ public:
             return;
         }
 
+        long dexSize = 0, jsonSize = 0;
         int fd = api->connectCompanion();
 
-        dexVector = receiveVector(fd);
-        propVector = receiveVector(fd);
+        read(fd, &dexSize, sizeof(long));
+        read(fd, &jsonSize, sizeof(long));
+
+        if (dexSize < 1) {
+            close(fd);
+            LOGD("Couldn't read classes.dex");
+            api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+            return;
+        }
+
+        if (jsonSize < 1) {
+            close(fd);
+            LOGD("Couldn't read pif.json");
+            api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+            return;
+        }
+
+        dexVector.resize(dexSize);
+        read(fd, dexVector.data(), dexSize);
+
+        std::vector<char> jsonVector(jsonSize);
+        read(fd, jsonVector.data(), jsonSize);
 
         close(fd);
 
-        LOGD("Read from file descriptor file 'classes.dex' -> %d bytes",
-             static_cast<int>(dexVector.size()));
-        LOGD("Read from file descriptor file 'pif.json' -> %d bytes",
-             static_cast<int>(propVector.size()));
+        LOGD("Read from file descriptor file 'classes.dex' -> %ld bytes", dexSize);
+        LOGD("Read from file descriptor file 'pif.json' -> %ld bytes", jsonSize);
 
-        if (dexVector.empty() || propVector.empty()) api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+        std::string data(jsonVector.cbegin(), jsonVector.cend());
+        json = nlohmann::json::parse(data, nullptr, false, true);
+
+        jsonVector.clear();
+        data.clear();
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs *args) override {
-        if (dexVector.empty() || propVector.empty()) return;
+        if (dexVector.empty() || json.empty()) return;
 
         readJson();
 
-        inject();
-
         doHook();
 
+        inject();
+
         dexVector.clear();
-        propVector.clear();
+        json.clear();
     }
 
     void preServerSpecialize(zygisk::ServerSpecializeArgs *args) override {
@@ -159,19 +166,35 @@ public:
 private:
     zygisk::Api *api = nullptr;
     JNIEnv *env = nullptr;
-    std::vector<char> dexVector, propVector;
+    std::vector<char> dexVector;
+    nlohmann::json json;
 
     void readJson() {
-        std::string data(propVector.cbegin(), propVector.cend());
-        nlohmann::json json = nlohmann::json::parse(data, nullptr, false, true);
+        if (json.contains("SECURITY_PATCH")) {
+            if (json["SECURITY_PATCH"].is_null()) {
+                LOGD("Key SECURITY_PATCH is null!");
+            } else if (json["SECURITY_PATCH"].is_string()) {
+                SECURITY_PATCH = json["SECURITY_PATCH"].get<std::string>();
+            } else {
+                LOGD("Error parsing SECURITY_PATCH!");
+            }
+        } else {
+            LOGD("Key SECURITY_PATCH doesn't exist in JSON file!");
+        }
 
-        auto getStringFromJson = [&json](const std::string &key) {
-            return json.contains(key) && !json[key].is_null() ? json[key].get<std::string>()
-                                                              : "NULL";
-        };
-
-        SECURITY_PATCH = getStringFromJson("SECURITY_PATCH");
-        FIRST_API_LEVEL = getStringFromJson("FIRST_API_LEVEL");
+        if (json.contains("FIRST_API_LEVEL")) {
+            if (json["FIRST_API_LEVEL"].is_null()) {
+                LOGD("Key FIRST_API_LEVEL is null!");
+                FIRST_API_LEVEL = "nullptr";
+            } else if (json["FIRST_API_LEVEL"].is_string()) {
+                FIRST_API_LEVEL = json["FIRST_API_LEVEL"].get<std::string>();
+            } else {
+                LOGD("Error parsing FIRST_API_LEVEL!");
+            }
+            json.erase("FIRST_API_LEVEL");
+        } else {
+            LOGD("Key FIRST_API_LEVEL doesn't exist in JSON file!");
+        }
     }
 
     void inject() {
@@ -200,8 +223,7 @@ private:
         LOGD("read json");
         auto readProps = env->GetStaticMethodID(entryClass, "readJson",
                                                 "(Ljava/lang/String;)V");
-        std::string data(propVector.cbegin(), propVector.cend());
-        auto javaStr = env->NewStringUTF(data.c_str());
+        auto javaStr = env->NewStringUTF(json.dump().c_str());
         env->CallStaticVoidMethod(entryClass, readProps, javaStr);
 
         LOGD("call init");
@@ -211,22 +233,45 @@ private:
 };
 
 static void companion(int fd) {
-    std::ifstream dex(DEX_FILE_PATH, std::ios::binary);
-    std::ifstream prop(PROP_FILE_PATH);
+    long dexSize = 0, jsonSize = 0;
+    std::vector<char> dexVector, jsonVector;
 
-    std::vector<char> dexVector((std::istreambuf_iterator<char>(dex)),
-                                std::istreambuf_iterator<char>());
-    std::vector<char> propVector((std::istreambuf_iterator<char>(prop)),
-                                 std::istreambuf_iterator<char>());
+    FILE *dex = fopen(DEX_FILE_PATH, "rb");
 
-    dex.close();
-    prop.close();
+    if (dex) {
+        fseek(dex, 0, SEEK_END);
+        dexSize = ftell(dex);
+        fseek(dex, 0, SEEK_SET);
 
-    sendVector(fd, dexVector);
-    sendVector(fd, propVector);
+        dexVector.resize(dexSize);
+        fread(dexVector.data(), 1, dexSize, dex);
+
+        fclose(dex);
+    }
+
+    FILE *json = fopen(CUSTOM_JSON_FILE_PATH, "r");
+    if (!json)
+       FILE *json = fopen(JSON_FILE_PATH, "r");
+
+    if (json) {
+        fseek(json, 0, SEEK_END);
+        jsonSize = ftell(json);
+        fseek(json, 0, SEEK_SET);
+
+        jsonVector.resize(jsonSize);
+        fread(jsonVector.data(), 1, jsonSize, json);
+
+        fclose(json);
+    }
+
+    write(fd, &dexSize, sizeof(long));
+    write(fd, &jsonSize, sizeof(long));
+
+    write(fd, dexVector.data(), dexSize);
+    write(fd, jsonVector.data(), jsonSize);
 
     dexVector.clear();
-    propVector.clear();
+    jsonVector.clear();
 }
 
 REGISTER_ZYGISK_MODULE(PlayIntegrityFix)
