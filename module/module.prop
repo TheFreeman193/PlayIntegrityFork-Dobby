@@ -1,7 +1,7 @@
 id=playintegrityfix
-name=Play Integrity Fix
-version=PROPS-v2.1
-versionCode=2101
-author=chiteroman
-description=Fix CTS profile (SafetyNet) and DEVICE verdict (Play Integrity).
-updateJson=https://raw.githubusercontent.com/chiteroman/PlayIntegrityFix/custom/update.json
+name=Play Integrity Fork
+version=v3
+versionCode=3000
+author=osm0sis & chiteroman @ xda-developers
+description=Fix CTS profile (SafetyNet) and DEVICE verdict (Play Integrity)
+updateJson=https://raw.githubusercontent.com/osm0sis/PlayIntegrityFork/main/update.json

@@ -1,15 +1,15 @@
 # Error on < Android 8
 if [ "$API" -lt 26 ]; then
-    abort "!!! You can't use this module on Android < 8.0"
+    abort "! You can't use this module on Android < 8.0"
 fi
 
 # Remove/warn if conflicting modules are installed
 if [ -d /data/adb/modules/safetynet-fix ]; then
     touch /data/adb/modules/safetynet-fix/remove
-    ui_print "- 'safetynet-fix' module will be removed on next reboot"
+    ui_print "! Universal SafetyNet Fix (USNF) module will be removed on next reboot"
 fi
 if [ -d /data/adb/modules/MagiskHidePropsConf ]; then
-    ui_print "- Warning, 'MagiskHidePropsConf' module may cause issues with PIF"
+    ui_print "! MagiskHidePropsConfig (MHPC) module may cause issues with PIF"
 fi
 
 # Copy any custom.pif.json to updated module
