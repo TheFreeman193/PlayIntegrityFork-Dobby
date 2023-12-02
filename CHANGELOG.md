@@ -5,3 +5,4 @@
 - Use custom.pif.json for custom spoofing if it exists, self-contained in the module directory, and restore it after module updates
 - Move props that need to be changed earlier into post-fs-data.sh
 - Warn of possible conflict if MagiskHidePropsConfig (MHPC) is installed
+- Continue to use ShadowHook for now

@@ -30,8 +30,8 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew assembleRelease
       
-    - name: Create PlayIntegrityFork zip
+    - name: Upload PlayIntegrityFork-CI.zip
       uses: actions/upload-artifact@v3
       with:
-        name: PlayIntegrityFork
+        name: PlayIntegrityFork-CI
         path: module/*
