@@ -1,3 +1,6 @@
 [submodule "libcxx"]
 	path = app/src/main/cpp/libcxx
 	url = https://github.com/topjohnwu/libcxx.git
+[submodule "shadowhook"]
+	path = app/src/main/cpp/shadowhook
+	url = https://github.com/bytedance/android-inline-hook
