@@ -69,5 +69,9 @@ No.
 
 ## About Play Integrity, SafetyNet is deprecated
 
-You can read more info
-here: [click me](https://xdaforums.com/t/info-play-integrity-api-replacement-for-safetynet.4479337/)
+You can read more
+here: [Play Integrity API Info - XDA Forums](https://xdaforums.com/t/info-play-integrity-api-replacement-for-safetynet.4479337/)
+
+## Credits
+
+Module scripts were adapted from those of kdrag0n/Displax's Universal SafetyNet Fix (USNF) module, please see the commit history of [Displax's USNF Fork](https://github.com/Displax/safetynet-fix/tree/dev/magisk) for proper attribution.
