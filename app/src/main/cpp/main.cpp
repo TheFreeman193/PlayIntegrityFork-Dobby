@@ -251,7 +251,7 @@ static void companion(int fd) {
 
     FILE *json = fopen(CUSTOM_JSON_FILE_PATH, "r");
     if (!json)
-       FILE *json = fopen(JSON_FILE_PATH, "r");
+        json = fopen(JSON_FILE_PATH, "r");
 
     if (json) {
         fseek(json, 0, SEEK_END);
