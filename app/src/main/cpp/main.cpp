@@ -11,10 +11,9 @@
 #define DEX_FILE_PATH "/data/adb/modules/playintegrityfix/classes.dex"
 
 #define JSON_FILE_PATH "/data/adb/modules/playintegrityfix/pif.json"
-
 #define CUSTOM_JSON_FILE_PATH "/data/adb/modules/playintegrityfix/custom.pif.json"
 
-static std::string FIRST_API_LEVEL, SECURITY_PATCH;
+static std::string FIRST_API_LEVEL, SECURITY_PATCH, BUILD_ID, VNDK_VERSION;
 
 typedef void (*T_Callback)(void *, const char *, const char *, uint32_t);
 
@@ -31,8 +30,7 @@ static void modify_callback(void *cookie, const char *name, const char *value, u
     if (prop.ends_with("api_level")) {
         if (FIRST_API_LEVEL.empty()) {
             LOGD("FIRST_API_LEVEL is empty, ignoring it...");
-        } else if (FIRST_API_LEVEL == "nullptr") {
-            value = nullptr;
+            return;
         } else {
             value = FIRST_API_LEVEL.c_str();
         }
@@ -40,8 +38,25 @@ static void modify_callback(void *cookie, const char *name, const char *value, u
     } else if (prop.ends_with("security_patch")) {
         if (SECURITY_PATCH.empty()) {
             LOGD("SECURITY_PATCH is empty, ignoring it...");
+            return;
         } else {
             value = SECURITY_PATCH.c_str();
+        }
+        LOGD("[%s] -> %s", name, value);
+    } else if (prop == "ro.build.id") {
+        if (BUILD_ID.empty()) {
+            LOGD("BUILD_ID is empty, ignoring it...");
+            return;
+        } else {
+            value = BUILD_ID.c_str();
+        }
+        LOGD("[%s] -> %s", name, value);
+    } else if (prop.ends_with("vndk.version")) {
+        if (VNDK_VERSION.empty()) {
+            LOGD("VNDK_VERSION is empty, ignoring it...");
+            return;
+        } else {
+            value = VNDK_VERSION.c_str();
         }
         LOGD("[%s] -> %s", name, value);
     }
@@ -51,8 +66,7 @@ static void modify_callback(void *cookie, const char *name, const char *value, u
 
 static void (*o_system_property_read_callback)(const prop_info *, T_Callback, void *);
 
-static void
-my_system_property_read_callback(const prop_info *pi, T_Callback callback, void *cookie) {
+static void my_system_property_read_callback(const prop_info *pi, T_Callback callback, void *cookie) {
     if (pi == nullptr || callback == nullptr || cookie == nullptr) {
         return o_system_property_read_callback(pi, callback, cookie);
     }
@@ -170,6 +184,20 @@ private:
     nlohmann::json json;
 
     void readJson() {
+        LOGD("JSON contains %d keys!", static_cast<int>(json.size()));
+
+        // Direct property spoofing workarounds
+        if (json.contains("ID")) {
+            if (json["ID"].is_null()) {
+                LOGD("Key ID is null!");
+            } else if (json["ID"].is_string()) {
+                BUILD_ID = json["ID"].get<std::string>();
+            } else {
+                LOGD("Error parsing ID!");
+            }
+        } else {
+            LOGD("Key ID doesn't exist in JSON file!");
+        }
         if (json.contains("SECURITY_PATCH")) {
             if (json["SECURITY_PATCH"].is_null()) {
                 LOGD("Key SECURITY_PATCH is null!");
@@ -181,19 +209,52 @@ private:
         } else {
             LOGD("Key SECURITY_PATCH doesn't exist in JSON file!");
         }
+        if (json.contains("DEVICE_INITIAL_SDK_INT")) {
+            if (json["DEVICE_INITIAL_SDK_INT"].is_null()) {
+                LOGD("Key DEVICE_INITIAL_SDK_INT is null!");
+            } else if (json["DEVICE_INITIAL_SDK_INT"].is_string()) {
+                FIRST_API_LEVEL = json["DEVICE_INITIAL_SDK_INT"].get<std::string>();
+            } else {
+                LOGD("Error parsing DEVICE_INITIAL_SDK_INT!");
+            }
+        } else {
+            LOGD("Key DEVICE_INITIAL_SDK_INT doesn't exist in JSON file!");
+        }
 
+        // Backwards compatibility for chiteroman's alternate API naming
+        if (json.contains("BUILD_ID")) {
+            if (json["BUILD_ID"].is_null()) {
+                LOGD("Key BUILD_ID is null!");
+            } else if (json["BUILD_ID"].is_string()) {
+                BUILD_ID = json["BUILD_ID"].get<std::string>();
+            } else {
+                LOGD("Error parsing BUILD_ID!");
+            }
+        } else {
+            LOGD("Key BUILD_ID doesn't exist in JSON file!");
+        }
         if (json.contains("FIRST_API_LEVEL")) {
             if (json["FIRST_API_LEVEL"].is_null()) {
                 LOGD("Key FIRST_API_LEVEL is null!");
-                FIRST_API_LEVEL = "nullptr";
             } else if (json["FIRST_API_LEVEL"].is_string()) {
                 FIRST_API_LEVEL = json["FIRST_API_LEVEL"].get<std::string>();
             } else {
                 LOGD("Error parsing FIRST_API_LEVEL!");
             }
-            json.erase("FIRST_API_LEVEL");
         } else {
             LOGD("Key FIRST_API_LEVEL doesn't exist in JSON file!");
+        }
+        if (json.contains("VNDK_VERSION")) {
+            if (json["VNDK_VERSION"].is_null()) {
+                LOGD("Key VNDK_VERSION is null!");
+            } else if (json["VNDK_VERSION"].is_string()) {
+                VNDK_VERSION = json["VNDK_VERSION"].get<std::string>();
+            } else {
+                LOGD("Error parsing VNDK_VERSION!");
+            }
+            json.erase("VNDK_VERSION"); // Doesn't exist in Build or Build.VERSION
+        } else {
+            LOGD("Key VNDK_VERSION doesn't exist in JSON file!");
         }
     }
 

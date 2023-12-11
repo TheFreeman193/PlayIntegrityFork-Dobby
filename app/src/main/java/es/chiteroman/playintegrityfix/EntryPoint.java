@@ -32,6 +32,7 @@ public final class EntryPoint {
             reader.endObject();
         } catch (IOException e) {
             LOG("Couldn't read JSON from Zygisk: " + e);
+            return;
         }
     }
 
@@ -63,49 +64,70 @@ public final class EntryPoint {
     }
 
     static void spoofDevice() {
-        if (map.isEmpty()) return;
+        for (String key : map.keySet()) {
+            // Backwards compatibility for chiteroman's alternate API naming
+            if (key.equals("BUILD_ID")) {
+                setProp("ID", map.get("BUILD_ID"));
+            } else if (key.equals("FIRST_API_LEVEL")) {
+                setProp("DEVICE_INITIAL_SDK_INT", map.get("FIRST_API_LEVEL"));
+            } else {
+                setProp(key, map.get(key));
+            }
+        }
+    }
 
-        setProp("PRODUCT", map.get("PRODUCT"));
-        setProp("DEVICE", map.get("DEVICE"));
-        setProp("MANUFACTURER", map.get("MANUFACTURER"));
-        setProp("BRAND", map.get("BRAND"));
-        setProp("MODEL", map.get("MODEL"));
-        setProp("FINGERPRINT", map.get("FINGERPRINT"));
-        setVersionProp("SECURITY_PATCH", map.get("SECURITY_PATCH"));
+    private static boolean classContainsField(Class className, String fieldName) {
+        for (Field field : className.getDeclaredFields()) {
+            if (field.getName().equals(fieldName)) return true;
+        }
+        return false;
     }
 
     private static void setProp(String name, String value) {
-        if (name == null || value == null || name.isEmpty() || value.isEmpty()) return;
-        try {
-            Field field = Build.class.getDeclaredField(name);
-            field.setAccessible(true);
-            String oldValue = (String) field.get(null);
-            field.set(null, value);
-            field.setAccessible(false);
-            if (value.equals(oldValue)) return;
-            LOG(String.format("[%s]: %s -> %s", name, oldValue, value));
-        } catch (NoSuchFieldException e) {
-            LOG(String.format("Couldn't find '%s' field name.", name));
-        } catch (IllegalAccessException e) {
-            LOG(String.format("Couldn't modify '%s' field value.", name));
+        if (value == null || value.isEmpty()) {
+            LOG(String.format("%s is null, skipping...", name));
+            return;
         }
-    }
 
-    private static void setVersionProp(String name, String value) {
-        if (name == null || value == null || name.isEmpty() || value.isEmpty()) return;
+        Field field = null;
+        String oldValue = null;
+
         try {
-            Field field = Build.VERSION.class.getDeclaredField(name);
-            field.setAccessible(true);
-            String oldValue = (String) field.get(null);
-            field.set(null, value);
-            field.setAccessible(false);
-            if (value.equals(oldValue)) return;
-            LOG(String.format("[%s]: %s -> %s", name, oldValue, value));
+            if (classContainsField(Build.class, name)) {
+                field = Build.class.getDeclaredField(name);
+            } else if (classContainsField(Build.VERSION.class, name)) {
+                field = Build.VERSION.class.getDeclaredField(name);
+            } else {
+                LOG(String.format("Couldn't determine '%s' class name", name));
+                return;
+            }
         } catch (NoSuchFieldException e) {
-            LOG(String.format("Couldn't find '%s' field name.", name));
-        } catch (IllegalAccessException e) {
-            LOG(String.format("Couldn't modify '%s' field value.", name));
+            LOG(String.format("Couldn't find '%s' field name: " + e, name));
+            return;
         }
+        field.setAccessible(true);
+        try {
+            oldValue = String.valueOf(field.get(null));
+        } catch (IllegalAccessException e) {
+            LOG(String.format("Couldn't access '%s' field value: " + e, name));
+            return;
+        }
+        if (value.equals(oldValue)) {
+            LOG(String.format("[%s]: already '%s', skipping...", name, value));
+            return;
+        }
+        try {
+            if (field.getType().equals(Integer.TYPE)) {
+                field.set(null, Integer.parseInt(value));
+            } else {
+                field.set(null, value);
+            }
+        } catch (IllegalAccessException e) {
+            LOG(String.format("Couldn't modify '%s' field value: " + e, name));
+            return;
+        }
+        field.setAccessible(false);
+        LOG(String.format("[%s]: %s -> %s", name, oldValue, value));
     }
 
     static void LOG(String msg) {
