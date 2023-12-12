@@ -67,11 +67,11 @@ public final class EntryPoint {
         for (String key : map.keySet()) {
             // Backwards compatibility for chiteroman's alternate API naming
             if (key.equals("BUILD_ID")) {
-                setProp("ID", map.get("BUILD_ID"));
+                setField("ID", map.get("BUILD_ID"));
             } else if (key.equals("FIRST_API_LEVEL")) {
-                setProp("DEVICE_INITIAL_SDK_INT", map.get("FIRST_API_LEVEL"));
+                setField("DEVICE_INITIAL_SDK_INT", map.get("FIRST_API_LEVEL"));
             } else {
-                setProp(key, map.get(key));
+                setField(key, map.get(key));
             }
         }
     }
@@ -83,7 +83,7 @@ public final class EntryPoint {
         return false;
     }
 
-    private static void setProp(String name, String value) {
+    private static void setField(String name, String value) {
         if (value == null || value.isEmpty()) {
             LOG(String.format("%s is null, skipping...", name));
             return;
