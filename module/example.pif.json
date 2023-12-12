@@ -1,0 +1,20 @@
+// Rename to custom.pif.json once completed
+//
+// See android.os.Build source for corresponding properties:
+// https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/os/Build.java
+
+{
+  "MANUFACTURER": "",
+  "MODEL": "",
+  "FINGERPRINT": "",
+  "BRAND": "",
+  "PRODUCT": "",
+  "DEVICE": "",
+  "RELEASE": "",
+  "ID": "",
+  "INCREMENTAL": "",
+  "TYPE": "",
+  "TAGS": "",
+  "SECURITY_PATCH": "",
+  "DEVICE_INITIAL_SDK_INT": ""
+}
