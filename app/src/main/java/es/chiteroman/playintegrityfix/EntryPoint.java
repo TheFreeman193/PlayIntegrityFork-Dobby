@@ -91,6 +91,7 @@ public final class EntryPoint {
 
         Field field = null;
         String oldValue = null;
+        Object newValue = null;
 
         try {
             if (classContainsField(Build.class, name)) {
@@ -116,12 +117,21 @@ public final class EntryPoint {
             LOG(String.format("[%s]: already '%s', skipping...", name, value));
             return;
         }
+        Class<?> fieldType = field.getType();
+        if (fieldType == String.class) {
+            newValue = value;
+        } else if (fieldType == int.class) {
+            newValue = Integer.parseInt(value);
+        } else if (fieldType == long.class) {
+            newValue = Long.parseLong(value);
+        } else if (fieldType == boolean.class) {
+            newValue = Boolean.parseBoolean(value);
+        } else {
+            LOG(String.format("Couldn't convert '%s' to '%s' type", value, fieldType));
+            return;
+        }
         try {
-            if (field.getType().equals(Integer.TYPE)) {
-                field.set(null, Integer.parseInt(value));
-            } else {
-                field.set(null, value);
-            }
+            field.set(null, newValue);
         } catch (IllegalAccessException e) {
             LOG(String.format("Couldn't modify '%s' field value: " + e, name));
             return;
