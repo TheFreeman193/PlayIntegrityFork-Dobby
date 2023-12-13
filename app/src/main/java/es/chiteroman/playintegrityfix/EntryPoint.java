@@ -30,8 +30,9 @@ public final class EntryPoint {
                 map.put(reader.nextName(), reader.nextString());
             }
             reader.endObject();
-        } catch (IOException e) {
+        } catch (IOException|IllegalStateException e) {
             LOG("Couldn't read JSON from Zygisk: " + e);
+            map.clear();
             return;
         }
     }
@@ -84,8 +85,8 @@ public final class EntryPoint {
     }
 
     private static void setField(String name, String value) {
-        if (value == null || value.isEmpty()) {
-            LOG(String.format("%s is null, skipping...", name));
+        if (value.isEmpty()) {
+            LOG(String.format("%s is empty, skipping...", name));
             return;
         }
 
