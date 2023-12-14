@@ -1,6 +1,11 @@
 # Play Integrity Fork
 *PIF forked to bring back the custom.pif.json restore feature and develop more methodically*
 
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/osm0sis/PlayIntegrityFork?label=Release&color=blue&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases/latest)
+[![GitHub Release Date](https://img.shields.io/github/release-date/osm0sis/PlayIntegrityFork?label=Release%20Date&color=brightgreen&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases)
+[![GitHub Releases](https://img.shields.io/github/downloads/osm0sis/PlayIntegrityFork/latest/total?label=Downloads%20%28Latest%20Release%29&color=blue&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases/latest)
+[![GitHub All Releases](https://img.shields.io/github/downloads/osm0sis/PlayIntegrityFork/total?label=Total%20Downloads%20%28All%20Releases%29&color=brightgreen&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases)
+
 A Zygisk module which fixes "ctsProfileMatch" (SafetyNet) and "MEETS_DEVICE_INTEGRITY" (Play Integrity).
 
 To use this module you must have one of the following:
@@ -16,9 +21,9 @@ The purpose of the module is to avoid hardware attestation.
 
 ## About 'custom.pif.json' file
 
-You can create this file in the module directory to spoof custom values to the GMS unstable process. It will be used instead of any included pif.json.
+You can fill out the included template [example.pif.json](https://raw.githubusercontent.com/osm0sis/PlayIntegrityFork/main/module/example.pif.json) from the module directory then rename it to custom.pif.json to spoof custom values to the GMS unstable process. It will be used instead of any included pif.json.
 
-You can't use values from recent devices due them triggering hardware backed attestation.
+You can't use values from recent devices due them triggering full hardware backed attestation.
 
 <details>
 <summary>Resources</summary>
@@ -54,6 +59,8 @@ Follow these steps:
 - Clear Google Play Store cache and data
 - Clear Google Play Services (com.google.android.gms) cache and data (Optionally skip clearing data and wait some time, ~24h, for it to resolve on its own)
 - Reboot
+
+Note clearing Google Play Services app ***data*** will then require you to reset any WearOS devices paired to your device.
 
 ### Read module logs
 
