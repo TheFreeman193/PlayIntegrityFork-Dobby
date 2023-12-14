@@ -83,7 +83,7 @@ static void doHook() {
             reinterpret_cast<void **>(&o_system_property_read_callback)
     );
     if (handle == nullptr) {
-        LOGD("Couldn't find '__system_property_read_callback' handle. Report to @chiteroman");
+        LOGD("Couldn't find '__system_property_read_callback' handle");
         return;
     }
     LOGD("Found '__system_property_read_callback' handle at %p", handle);
