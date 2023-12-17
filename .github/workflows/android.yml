@@ -19,7 +19,7 @@ jobs:
         fetch-depth: 0
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -31,7 +31,8 @@ jobs:
       run: ./gradlew assembleRelease
       
     - name: Upload CI module zip as artifact zip
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: PlayIntegrityFork-CI
         path: module/*
+        compression-level: 9
