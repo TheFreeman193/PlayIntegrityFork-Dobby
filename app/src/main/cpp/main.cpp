@@ -13,7 +13,9 @@
 #define JSON_FILE_PATH "/data/adb/modules/playintegrityfix/pif.json"
 #define CUSTOM_JSON_FILE_PATH "/data/adb/modules/playintegrityfix/custom.pif.json"
 
-static std::string FIRST_API_LEVEL, SECURITY_PATCH, BUILD_ID, VNDK_VERSION;
+static int VERBOSE_LOGS = 0;
+
+static std::map<std::string, std::string> jsonProps;
 
 typedef void (*T_Callback)(void *, const char *, const char *, uint32_t);
 
@@ -21,44 +23,34 @@ static std::map<void *, T_Callback> callbacks;
 
 static void modify_callback(void *cookie, const char *name, const char *value, uint32_t serial) {
 
-    if (cookie == nullptr || name == nullptr || value == nullptr ||
-        !callbacks.contains(cookie))
-        return;
+    if (cookie == nullptr || name == nullptr || value == nullptr || !callbacks.contains(cookie)) return;
 
-    std::string_view prop(name);
+    const char *oldValue = value;
 
-    if (prop.ends_with("api_level")) {
-        if (FIRST_API_LEVEL.empty()) {
-            LOGD("FIRST_API_LEVEL is empty, ignoring it...");
-            return;
-        } else {
-            value = FIRST_API_LEVEL.c_str();
+    std::string prop(name);
+
+    // Spoof specific property values
+    if (prop == "sys.usb.state") {
+        value = "mtp";
+    }
+
+    if (jsonProps.count(prop)) {
+        // Exact property match
+        value = jsonProps[prop].c_str();
+    } else {
+        // Leading * wildcard property match
+        for (const auto &p: jsonProps) {
+            if (p.first.starts_with("*") && prop.ends_with(p.first.substr(1))) {
+                value = p.second.c_str();
+                break;
+            }
         }
-        LOGD("[%s] -> %s", name, value);
-    } else if (prop.ends_with("security_patch")) {
-        if (SECURITY_PATCH.empty()) {
-            LOGD("SECURITY_PATCH is empty, ignoring it...");
-            return;
-        } else {
-            value = SECURITY_PATCH.c_str();
-        }
-        LOGD("[%s] -> %s", name, value);
-    } else if (prop == "ro.build.id") {
-        if (BUILD_ID.empty()) {
-            LOGD("BUILD_ID is empty, ignoring it...");
-            return;
-        } else {
-            value = BUILD_ID.c_str();
-        }
-        LOGD("[%s] -> %s", name, value);
-    } else if (prop.ends_with("vndk.version")) {
-        if (VNDK_VERSION.empty()) {
-            LOGD("VNDK_VERSION is empty, ignoring it...");
-            return;
-        } else {
-            value = VNDK_VERSION.c_str();
-        }
-        LOGD("[%s] -> %s", name, value);
+    }
+
+    if (oldValue == value) {
+        if (VERBOSE_LOGS > 99) LOGD("[%s]: %s (unchanged)", name, value);
+    } else {
+        LOGD("[%s]: %s -> %s", name, oldValue, value);
     }
 
     return callbacks[cookie](cookie, name, value, serial);
@@ -186,75 +178,53 @@ private:
     void readJson() {
         LOGD("JSON contains %d keys!", static_cast<int>(json.size()));
 
-        // Direct property spoofing workarounds
-        if (json.contains("ID")) {
-            if (json["ID"].is_null()) {
-                LOGD("Key ID is null!");
-            } else if (json["ID"].is_string()) {
-                BUILD_ID = json["ID"].get<std::string>();
+        if (json.contains("VERBOSE_LOGS")) {
+            if (!json["VERBOSE_LOGS"].is_null() && json["VERBOSE_LOGS"].is_string()) {
+                VERBOSE_LOGS = stoi(json["VERBOSE_LOGS"].get<std::string>());
+                if (VERBOSE_LOGS > 0) LOGD("Verbose logging (level %d) enabled!", VERBOSE_LOGS);
             } else {
-                LOGD("Error parsing ID!");
+                LOGD("Error parsing VERBOSE_LOGS!");
             }
-        } else {
-            LOGD("Key ID doesn't exist in JSON file!");
-        }
-        if (json.contains("SECURITY_PATCH")) {
-            if (json["SECURITY_PATCH"].is_null()) {
-                LOGD("Key SECURITY_PATCH is null!");
-            } else if (json["SECURITY_PATCH"].is_string()) {
-                SECURITY_PATCH = json["SECURITY_PATCH"].get<std::string>();
-            } else {
-                LOGD("Error parsing SECURITY_PATCH!");
-            }
-        } else {
-            LOGD("Key SECURITY_PATCH doesn't exist in JSON file!");
-        }
-        if (json.contains("DEVICE_INITIAL_SDK_INT")) {
-            if (json["DEVICE_INITIAL_SDK_INT"].is_null()) {
-                LOGD("Key DEVICE_INITIAL_SDK_INT is null!");
-            } else if (json["DEVICE_INITIAL_SDK_INT"].is_string()) {
-                FIRST_API_LEVEL = json["DEVICE_INITIAL_SDK_INT"].get<std::string>();
-            } else {
-                LOGD("Error parsing DEVICE_INITIAL_SDK_INT!");
-            }
-        } else {
-            LOGD("Key DEVICE_INITIAL_SDK_INT doesn't exist in JSON file!");
         }
 
         // Backwards compatibility for chiteroman's alternate API naming
-        if (json.contains("BUILD_ID")) {
-            if (json["BUILD_ID"].is_null()) {
-                LOGD("Key BUILD_ID is null!");
-            } else if (json["BUILD_ID"].is_string()) {
-                BUILD_ID = json["BUILD_ID"].get<std::string>();
-            } else {
-                LOGD("Error parsing BUILD_ID!");
-            }
-        } else {
-            LOGD("Key BUILD_ID doesn't exist in JSON file!");
-        }
         if (json.contains("FIRST_API_LEVEL")) {
-            if (json["FIRST_API_LEVEL"].is_null()) {
-                LOGD("Key FIRST_API_LEVEL is null!");
-            } else if (json["FIRST_API_LEVEL"].is_string()) {
-                FIRST_API_LEVEL = json["FIRST_API_LEVEL"].get<std::string>();
+            if (!json["FIRST_API_LEVEL"].is_null() && json["FIRST_API_LEVEL"].is_string()) {
+                if (json["FIRST_API_LEVEL"] == "") {
+                    LOGD("FIRST_API_LEVEL is empty, skipping...");
+                    json.erase("FIRST_API_LEVEL");
+                } else {
+                    LOGD("Using deprecated 'FIRST_API_LEVEL' field for '*.first_api_level' direct property spoofing...");
+                    if (VERBOSE_LOGS > 0) LOGD("Adding '*.first_api_level' to properties list");
+                    jsonProps["*.first_api_level"] = json["FIRST_API_LEVEL"].get<std::string>();
+                }
             } else {
                 LOGD("Error parsing FIRST_API_LEVEL!");
+                json.erase("FIRST_API_LEVEL");
             }
-        } else {
-            LOGD("Key FIRST_API_LEVEL doesn't exist in JSON file!");
         }
-        if (json.contains("VNDK_VERSION")) {
-            if (json["VNDK_VERSION"].is_null()) {
-                LOGD("Key VNDK_VERSION is null!");
-            } else if (json["VNDK_VERSION"].is_string()) {
-                VNDK_VERSION = json["VNDK_VERSION"].get<std::string>();
-            } else {
-                LOGD("Error parsing VNDK_VERSION!");
+
+        std::vector<std::string> eraseKeys;
+        for (auto &jsonList: json.items()) {
+            if (VERBOSE_LOGS > 1) LOGD("Parsing %s...", jsonList.key().c_str());
+            if (jsonList.key().find_first_of("*.") != std::string::npos) {
+                // Name contains . or * (wildcard) so assume real property name
+                if (!jsonList.value().is_null() && jsonList.value().is_string()) {
+                    if (jsonList.value() == "") {
+                        LOGD("%s is empty, skipping...", jsonList.key().c_str());
+                    } else {
+                        if (VERBOSE_LOGS > 0) LOGD("Adding '%s' to properties list", jsonList.key().c_str());
+                        jsonProps[jsonList.key()] = jsonList.value();
+                    }
+                } else {
+                    LOGD("Error parsing %s!", jsonList.key().c_str());
+                }
+                eraseKeys.push_back(jsonList.key());
             }
-            json.erase("VNDK_VERSION"); // Doesn't exist in Build or Build.VERSION
-        } else {
-            LOGD("Key VNDK_VERSION doesn't exist in JSON file!");
+        }
+        // Remove properties from parsed JSON
+        for (auto key: eraseKeys) {
+            if (json.contains(key)) json.erase(key);
         }
     }
 

@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class EntryPoint {
+    private static Integer verboseLogs = 0;
+
     private static final Map<String, String> map = new HashMap<>();
 
     public static void init() {
@@ -66,9 +68,10 @@ public final class EntryPoint {
 
     static void spoofDevice() {
         for (String key : map.keySet()) {
+            // Verbose logging if VERBOSE_LOGS with level number is last entry
+            if (key.equals("VERBOSE_LOGS")) {
+                verboseLogs = Integer.parseInt(map.get("VERBOSE_LOGS"));
             // Backwards compatibility for chiteroman's alternate API naming
-            if (key.equals("BUILD_ID")) {
-                setField("ID", map.get("BUILD_ID"));
             } else if (key.equals("FIRST_API_LEVEL")) {
                 setField("DEVICE_INITIAL_SDK_INT", map.get("FIRST_API_LEVEL"));
             } else {
@@ -100,7 +103,7 @@ public final class EntryPoint {
             } else if (classContainsField(Build.VERSION.class, name)) {
                 field = Build.VERSION.class.getDeclaredField(name);
             } else {
-                LOG(String.format("Couldn't determine '%s' class name", name));
+                if (verboseLogs > 1) LOG(String.format("Couldn't determine '%s' class name", name));
                 return;
             }
         } catch (NoSuchFieldException e) {
@@ -115,7 +118,7 @@ public final class EntryPoint {
             return;
         }
         if (value.equals(oldValue)) {
-            LOG(String.format("[%s]: already '%s', skipping...", name, value));
+            if (verboseLogs > 2) LOG(String.format("[%s]: %s (unchanged)", name, value));
             return;
         }
         Class<?> fieldType = field.getType();
