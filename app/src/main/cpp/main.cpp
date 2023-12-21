@@ -178,29 +178,13 @@ private:
     void readJson() {
         LOGD("JSON contains %d keys!", static_cast<int>(json.size()));
 
+        // Verbose logging if VERBOSE_LOGS with level number is last entry
         if (json.contains("VERBOSE_LOGS")) {
-            if (!json["VERBOSE_LOGS"].is_null() && json["VERBOSE_LOGS"].is_string()) {
+            if (!json["VERBOSE_LOGS"].is_null() && json["VERBOSE_LOGS"].is_string() && json["VERBOSE_LOGS"] != "") {
                 VERBOSE_LOGS = stoi(json["VERBOSE_LOGS"].get<std::string>());
                 if (VERBOSE_LOGS > 0) LOGD("Verbose logging (level %d) enabled!", VERBOSE_LOGS);
             } else {
                 LOGD("Error parsing VERBOSE_LOGS!");
-            }
-        }
-
-        // Backwards compatibility for chiteroman's alternate API naming
-        if (json.contains("FIRST_API_LEVEL")) {
-            if (!json["FIRST_API_LEVEL"].is_null() && json["FIRST_API_LEVEL"].is_string()) {
-                if (json["FIRST_API_LEVEL"] == "") {
-                    LOGD("FIRST_API_LEVEL is empty, skipping...");
-                    json.erase("FIRST_API_LEVEL");
-                } else {
-                    LOGD("Using deprecated 'FIRST_API_LEVEL' field for '*.first_api_level' direct property spoofing...");
-                    if (VERBOSE_LOGS > 0) LOGD("Adding '*.first_api_level' to properties list");
-                    jsonProps["*.first_api_level"] = json["FIRST_API_LEVEL"].get<std::string>();
-                }
-            } else {
-                LOGD("Error parsing FIRST_API_LEVEL!");
-                json.erase("FIRST_API_LEVEL");
             }
         }
 

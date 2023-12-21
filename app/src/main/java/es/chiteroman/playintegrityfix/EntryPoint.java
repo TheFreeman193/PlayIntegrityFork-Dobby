@@ -71,9 +71,6 @@ public final class EntryPoint {
             // Verbose logging if VERBOSE_LOGS with level number is last entry
             if (key.equals("VERBOSE_LOGS")) {
                 verboseLogs = Integer.parseInt(map.get("VERBOSE_LOGS"));
-            // Backwards compatibility for chiteroman's alternate API naming
-            } else if (key.equals("FIRST_API_LEVEL")) {
-                setField("DEVICE_INITIAL_SDK_INT", map.get("FIRST_API_LEVEL"));
             } else {
                 setField(key, map.get(key));
             }
