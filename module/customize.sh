@@ -18,6 +18,15 @@ if [ -f /data/adb/modules/playintegrityfix/custom.pif.json ]; then
     cp -af /data/adb/modules/playintegrityfix/custom.pif.json $MODPATH/custom.pif.json
 fi
 
+# Migrate custom.pif.json to latest defaults if needed
+if [ -f "$MODPATH/custom.pif.json" ] && ! grep -q "api_level" $MODPATH/custom.pif.json; then
+    ui_print "- Running migration script on custom.pif.json:"
+    ui_print " "
+    chmod 755 $MODPATH/migrate.sh
+    sh $MODPATH/migrate.sh install $MODPATH/custom.pif.json
+    ui_print " "
+fi
+
 # Clean up any leftover files from previous deprecated methods
 rm -f /data/data/com.google.android.gms/cache/pif.prop /data/data/com.google.android.gms/pif.prop
 rm -f /data/data/com.google.android.gms/cache/pif.json /data/data/com.google.android.gms/pif.json
