@@ -66,7 +66,7 @@ EOF
   done;
 fi;
 
-if [ -z "$DEVICE_INITIAL_SDK_INT" ]; then
+if [ -z "$DEVICE_INITIAL_SDK_INT" -o "$DEVICE_INITIAL_SDK_INT" = "null" ]; then
   item 'Missing required DEVICE_INITIAL_SDK_INT field and "*api_level" property value found, setting to 25 ...';
   DEVICE_INITIAL_SDK_INT=25;
 fi;
