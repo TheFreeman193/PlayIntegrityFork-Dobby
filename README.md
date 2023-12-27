@@ -25,6 +25,8 @@ You can fill out the included template [example.pif.json](https://raw.githubuser
 
 You can't use values from recent devices due them triggering full hardware backed attestation.
 
+Older formatted custom.pif.json files from cross-forks and previous releases will be automatically migrated to the latest format.
+
 <details>
 <summary>Resources</summary>
 
