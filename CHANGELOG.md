@@ -14,4 +14,4 @@
 - Add empty example.pif.json with reference link
 - Fix GMS crashes if a null/bad value was read from json
 
-###[Previous changelogs](https://github.com/osm0sis/PlayIntegrityFork/releases)
+_[Previous changelogs](https://github.com/osm0sis/PlayIntegrityFork/releases)_
