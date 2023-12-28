@@ -27,6 +27,8 @@ You can't use values from recent devices due them triggering full hardware backe
 
 Older formatted custom.pif.json files from cross-forks and previous releases will be automatically migrated to the latest format.
 
+A migration may also be performed manually with `sh migrate.sh` and custom.pif.json in the same directory, or from a file explorer app that supports script execution.
+
 <details>
 <summary>Resources</summary>
 
