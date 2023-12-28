@@ -1,7 +1,11 @@
 #!/bin/sh
 
 case "$1" in
-  install) INSTALL=1; shift;;
+  -h|--help|help) echo "sh migrate.sh [-f] [file]"; exit 0;;
+esac;
+
+case "$1" in
+  -i|--install|install) INSTALL=1; shift;;
   *) echo "custom.pif.json migration script \
        \n  by osm0sis @ xda-developers \n";;
 esac;
@@ -10,6 +14,10 @@ item() { echo "- $@"; }
 die() { [ "$INSTALL" ] || echo "\n\n! $@"; exit 1; }
 grep_get_json() { grep "$1" "$DIR/custom.pif.json" | cut -d\" -f4; }
 grep_check_json() { grep -q "$1" "$DIR/custom.pif.json" && [ "$(grep_get_json "$1")" ]; }
+
+case "$1" in
+  -f|--force|force) FORCE=1; shift;;
+esac;
 
 if [ -f "$1" ]; then
   DIR="$1";
@@ -24,7 +32,7 @@ DIR=$(dirname "$(readlink -f "$DIR")");
 
 [ -f "$DIR/custom.pif.json" ] || die "No custom.pif.json found";
 
-grep_check_json api_level && die "No migration required";
+grep_check_json api_level && [ ! "$FORCE" ] && die "No migration required";
 
 [ "$INSTALL" ] || item "Parsing fields ...";
 
@@ -81,7 +89,8 @@ echo "  // Build Fields";
 for FIELD in $ALLFIELDS; do
   eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
 done;
-echo -e "\n  // System Properties";
+echo "
+  // System Properties";
 echo '    "*.build.id": "'$ID'",';
 echo '    "*.security_patch": "'$SECURITY_PATCH'",';
 [ -z "$VNDK_VERSION" ] || echo '    "*.vndk_version": "'$VNDK_VERSION'",';
