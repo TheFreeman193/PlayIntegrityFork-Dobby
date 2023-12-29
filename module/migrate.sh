@@ -4,14 +4,17 @@ case "$1" in
   -h|--help|help) echo "sh migrate.sh [-f] [file]"; exit 0;;
 esac;
 
+N="
+";
+
 case "$1" in
   -i|--install|install) INSTALL=1; shift;;
   *) echo "custom.pif.json migration script \
-       \n  by osm0sis @ xda-developers \n";;
+       $N  by osm0sis @ xda-developers $N";;
 esac;
 
 item() { echo "- $@"; }
-die() { [ "$INSTALL" ] || echo "\n\n! $@"; exit 1; }
+die() { [ "$INSTALL" ] || echo "$N$N! $@"; exit 1; }
 grep_get_json() { grep "$1" "$DIR/custom.pif.json" | cut -d\" -f4; }
 grep_check_json() { grep -q "$1" "$DIR/custom.pif.json" && [ "$(grep_get_json "$1")" ]; }
 
@@ -89,8 +92,7 @@ echo "  // Build Fields";
 for FIELD in $ALLFIELDS; do
   eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
 done;
-echo "
-  // System Properties";
+echo "$N  // System Properties";
 echo '    "*.build.id": "'$ID'",';
 echo '    "*.security_patch": "'$SECURITY_PATCH'",';
 [ -z "$VNDK_VERSION" ] || echo '    "*.vndk_version": "'$VNDK_VERSION'",';
