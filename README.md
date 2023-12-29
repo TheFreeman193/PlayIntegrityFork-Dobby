@@ -74,6 +74,8 @@ You can read module logs using this command directly after boot:
 adb shell "logcat | grep 'PIF'"
 ```
 
+Add "VERBOSE_LOGS" with a value of "0", "1", "2", "3" or "100" as the last entry of your custom.pif.json to enable higher logging levels; "100" will dump all the system properties that DroidGuard is checking.
+
 ## Can this module pass MEETS_STRONG_INTEGRITY?
 
 No.
