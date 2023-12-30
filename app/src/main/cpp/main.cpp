@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include "zygisk.hpp"
-#include "shadowhook.h"
+#include "dobby.h"
 #include "json.hpp"
 
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "PIF/Native", __VA_ARGS__)
@@ -19,11 +19,11 @@ static std::map<std::string, std::string> jsonProps;
 
 typedef void (*T_Callback)(void *, const char *, const char *, uint32_t);
 
-static std::map<void *, T_Callback> callbacks;
+static T_Callback o_callback = nullptr;
 
 static void modify_callback(void *cookie, const char *name, const char *value, uint32_t serial) {
 
-    if (cookie == nullptr || name == nullptr || value == nullptr || !callbacks.contains(cookie)) return;
+    if (cookie == nullptr || name == nullptr || value == nullptr || o_callback == nullptr) return;
 
     const char *oldValue = value;
 
@@ -53,7 +53,7 @@ static void modify_callback(void *cookie, const char *name, const char *value, u
         LOGD("[%s]: %s -> %s", name, oldValue, value);
     }
 
-    return callbacks[cookie](cookie, name, value, serial);
+    return o_callback(cookie, name, value, serial);
 }
 
 static void (*o_system_property_read_callback)(const prop_info *, T_Callback, void *);
@@ -62,23 +62,22 @@ static void my_system_property_read_callback(const prop_info *pi, T_Callback cal
     if (pi == nullptr || callback == nullptr || cookie == nullptr) {
         return o_system_property_read_callback(pi, callback, cookie);
     }
-    callbacks[cookie] = callback;
+    o_callback = callback;
     return o_system_property_read_callback(pi, modify_callback, cookie);
 }
 
 static void doHook() {
-    shadowhook_init(SHADOWHOOK_MODE_UNIQUE, false);
-    void *handle = shadowhook_hook_sym_name(
-            "libc.so",
-            "__system_property_read_callback",
-            reinterpret_cast<void *>(my_system_property_read_callback),
-            reinterpret_cast<void **>(&o_system_property_read_callback)
-    );
+    void *handle = DobbySymbolResolver(nullptr, "__system_property_read_callback");
     if (handle == nullptr) {
-        LOGD("Couldn't find '__system_property_read_callback' handle");
+        LOGD("ERROR: Couldn't find '__system_property_read_callback' handle.");
         return;
     }
-    LOGD("Found '__system_property_read_callback' handle at %p", handle);
+    if (VERBOSE_LOGS > 1) LOGD("Found '__system_property_read_callback' handle at %p", handle);
+    DobbyHook(
+        handle,
+        reinterpret_cast<dobby_dummy_func_t>(my_system_property_read_callback),
+        reinterpret_cast<dobby_dummy_func_t *>(&o_system_property_read_callback)
+    );
 }
 
 class PlayIntegrityFix : public zygisk::ModuleBase {
