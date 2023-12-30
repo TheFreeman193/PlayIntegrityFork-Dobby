@@ -83,7 +83,7 @@ tasks.register("copyFiles") {
 tasks.register<Zip>("zip") {
     dependsOn("copyFiles")
 
-    archiveFileName.set("PlayIntegrityFork.zip")
+    archiveFileName.set("PlayIntegrityFork-Dobby.zip")
     destinationDirectory.set(project.rootDir.resolve("out"))
 
     from(project.rootDir.resolve("module"))

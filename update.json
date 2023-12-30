@@ -1,6 +1,6 @@
 {
-    "version": "v5",
+    "version": "v5-dobby",
     "versionCode": 5000,
-    "zipUrl": "https://github.com/osm0sis/PlayIntegrityFork/releases/download/v5/PlayIntegrityFork-v5.zip",
-    "changelog": "https://raw.githubusercontent.com/osm0sis/PlayIntegrityFork/main/CHANGELOG.md"
+    "zipUrl": "https://github.com/TheFreeman193/PlayIntegrityFork-Dobby/releases/download/v5/PlayIntegrityFork-v5-Dobby.zip",
+    "changelog": "https://raw.githubusercontent.com/TheFreeman193/PlayIntegrityFork-Dobby/main/CHANGELOG.md"
 }
