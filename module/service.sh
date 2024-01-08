@@ -1,19 +1,7 @@
+MODDIR="${0%/*}"
+. "$MODDIR/common.sh"
+
 # Conditional sensitive properties
-
-resetprop_if_diff() {
-    local NAME=$1
-    local EXPECTED=$2
-    local CURRENT=$(resetprop $NAME)
-
-    [ -z "$CURRENT" ] || [ "$CURRENT" == "$EXPECTED" ] || resetprop $NAME $EXPECTED
-}
-resetprop_if_match() {
-    local NAME=$1
-    local CONTAINS=$2
-    local VALUE=$3
-
-    [[ "$(resetprop $NAME)" == *"$CONTAINS"* ]] && resetprop $NAME $VALUE
-}
 
 # Magisk recovery mode
 resetprop_if_match ro.bootmode recovery unknown

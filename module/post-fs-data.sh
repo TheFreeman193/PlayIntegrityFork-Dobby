@@ -1,3 +1,6 @@
+MODDIR="${0%/*}"
+. "$MODDIR/common.sh"
+
 # Remove Play Services from Magisk Denylist when set to enforcing
 if magisk --denylist status; then
     magisk --denylist rm com.google.android.gms
@@ -9,21 +12,6 @@ if [ -d /data/adb/modules/safetynet-fix ]; then
 fi
 
 # Conditional early sensitive properties
-
-resetprop_if_diff() {
-    local NAME=$1
-    local EXPECTED=$2
-    local CURRENT=$(resetprop $NAME)
-
-    [ -z "$CURRENT" ] || [ "$CURRENT" == "$EXPECTED" ] || resetprop $NAME $EXPECTED
-}
-resetprop_if_match() {
-    local NAME=$1
-    local CONTAINS=$2
-    local VALUE=$3
-
-    [[ "$(resetprop $NAME)" == *"$CONTAINS"* ]] && resetprop $NAME $VALUE
-}
 
 # RootBeer, Microsoft
 resetprop_if_diff ro.build.tags release-keys
