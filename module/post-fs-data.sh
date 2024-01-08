@@ -11,6 +11,17 @@ if [ -d /data/adb/modules/safetynet-fix ]; then
     touch /data/adb/modules/safetynet-fix/remove
 fi
 
+# Replace conflicting custom ROM injection app folders to disable them
+if [ -f "$MODDIR/app_replace.list" ]; then
+    for APP in $(grep -v '^#' "$MODDIR/app_replace.list"); do
+        if [ -d "$APP" ]; then
+            HIDEDIR="$MODDIR/$APP"
+            mkdir -p "$HIDEDIR"
+            touch "$HIDEDIR/.replace"
+        fi
+    done
+fi
+
 # Conditional early sensitive properties
 
 # Samsung

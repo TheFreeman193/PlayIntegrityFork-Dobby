@@ -1,0 +1,9 @@
+# Add conflicting custom ROM injection app folder paths to this list
+# and they will be replaced systemlessly to disable them
+
+# Xiaomi.eu
+/product/app/XiaomiEUInject
+/system/app/XInjectModule
+
+# EliteRoms
+/system/app/EliteDevelopmentModule

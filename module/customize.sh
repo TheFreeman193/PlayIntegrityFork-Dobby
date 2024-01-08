@@ -12,6 +12,18 @@ if [ -d /data/adb/modules/MagiskHidePropsConf ]; then
     ui_print "! MagiskHidePropsConfig (MHPC) module may cause issues with PIF"
 fi
 
+# Replace conflicting custom ROM injection app folders to disable them
+if [ -f "$MODPATH/app_replace.list" ]; then
+    for APP in $(grep -v '^#' "$MODPATH/app_replace.list"); do
+        if [ -d "$APP" ]; then
+            HIDEDIR="$MODPATH/$APP"
+            mkdir -p "$HIDEDIR"
+            touch "$HIDEDIR/.replace"
+            ui_print "- $(basename $APP) app disabled"
+        fi
+    done
+fi
+
 # Copy any custom.pif.json to updated module
 if [ -f /data/adb/modules/playintegrityfix/custom.pif.json ]; then
     ui_print "- Restoring custom.pif.json"
@@ -28,5 +40,5 @@ if [ -f "$MODPATH/custom.pif.json" ] && ! grep -q "api_level" $MODPATH/custom.pi
 fi
 
 # Clean up any leftover files from previous deprecated methods
-rm -f /data/data/com.google.android.gms/cache/pif.prop /data/data/com.google.android.gms/pif.prop
-rm -f /data/data/com.google.android.gms/cache/pif.json /data/data/com.google.android.gms/pif.json
+rm -f /data/data/com.google.android.gms/cache/pif.prop /data/data/com.google.android.gms/pif.prop \
+    /data/data/com.google.android.gms/cache/pif.json /data/data/com.google.android.gms/pif.json
