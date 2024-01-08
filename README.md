@@ -1,5 +1,5 @@
 # Play Integrity Fork
-*PIF forked to bring back the custom.pif.json restore feature and develop more methodically*
+*PIF forked to be more futureproof and develop more methodically*
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/osm0sis/PlayIntegrityFork?label=Release&color=blue&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases/latest)
 [![GitHub Release Date](https://img.shields.io/github/release-date/osm0sis/PlayIntegrityFork?label=Release%20Date&color=brightgreen&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases)
@@ -71,7 +71,7 @@ Note clearing Google Play Services app ***data*** will then require you to reset
 You can read module logs using this command directly after boot:
 
 ```
-adb shell "logcat | grep 'PIF'"
+adb shell "logcat | grep 'PIF/'"
 ```
 
 Add "VERBOSE_LOGS" with a value of "0", "1", "2", "3" or "100" as the last entry of your custom.pif.json to enable higher logging levels; "100" will dump all the system properties that DroidGuard is checking.
