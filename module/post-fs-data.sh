@@ -13,17 +13,24 @@ fi
 
 # Conditional early sensitive properties
 
-# RootBeer, Microsoft
-resetprop_if_diff ro.build.tags release-keys
-
 # Samsung
 resetprop_if_diff ro.boot.warranty_bit 0
 resetprop_if_diff ro.vendor.boot.warranty_bit 0
 resetprop_if_diff ro.vendor.warranty_bit 0
 resetprop_if_diff ro.warranty_bit 0
 
+# Xiaomi
+resetprop_if_diff ro.secureboot.lockstate locked
+
+# Realme
+resetprop_if_diff ro.boot.realme.lockstate 1
+resetprop_if_diff ro.boot.realmebootstate green
+
 # OnePlus
 resetprop_if_diff ro.is_ever_orange 0
+
+# Microsoft, RootBeer
+resetprop_if_diff ro.build.tags release-keys
 
 # Other
 resetprop_if_diff ro.build.type user
