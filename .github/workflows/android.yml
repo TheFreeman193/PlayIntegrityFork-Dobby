@@ -26,13 +26,12 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-      
+
     - name: Build with Gradle
       run: ./gradlew assembleRelease
-      
+
     - name: Upload CI module zip as artifact zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: PlayIntegrityFork-CI
+        name: PlayIntegrityFork-CI_#${{ github.run_number }}
         path: module/*
-        compression-level: 9
