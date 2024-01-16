@@ -1,4 +1,9 @@
 # Play Integrity Fork
+
+### The [osm0sis fork](https://github.com/osm0sis/PlayIntegrityFork) has switched to using Dobby for hooking. This fork is no longer needed.
+
+---
+
 *PIF forked to be more futureproof and develop more methodically*
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/osm0sis/PlayIntegrityFork?label=Release&color=blue&style=flat)](https://github.com/osm0sis/PlayIntegrityFork/releases/latest)
